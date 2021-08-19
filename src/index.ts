@@ -14,11 +14,12 @@ const slack = new WebClient(SLACK_BOT_TOKEN)
 export = (app: Probot) => {
   app.on("pull_request.labeled", async (context) => {
     if (context.payload.label?.id === API_REVIEW_REQUESTED_LABEL_ID) {
+      const escapedTitle = context.payload.pull_request.title.replace(/[&<>]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]!))
       slack.chat.postMessage({
         channel: '#wg-api',
         unfurl_links: false,
         text: `Hey <!subteam^SNSJW1BA9>! Just letting you know that the following PR needs API review:\n`+
-          `*<${context.payload.pull_request._links.html.href}|${context.payload.pull_request.title} (#${context.payload.pull_request.number})>*`
+          `*<${context.payload.pull_request._links.html.href}|${escapedTitle} (#${context.payload.pull_request.number})>*`
       })
     }
   });
