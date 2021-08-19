@@ -1,0 +1,36 @@
+import { ProbotOctokit } from "probot"
+import { WebClient } from '@slack/web-api';
+const { SLACK_BOT_TOKEN } = process.env
+
+if (!SLACK_BOT_TOKEN) {
+  console.error('Missing environment variable SLACK_BOT_TOKEN')
+  process.exit(1)
+}
+
+const slack = new WebClient(SLACK_BOT_TOKEN)
+
+const octokit = new ProbotOctokit()
+
+async function main() {
+  const q = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅"`
+  const searchUrl = 'https://github.com/electron/electron/pulls?q=' + encodeURIComponent(q)
+  const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
+    q: `repo:electron/electron ${q}`,
+    sort: 'created',
+  })
+  if (items.length) {
+    const text = `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
+      items.map(item => {
+        const escapedTitle = item.title.replace(/[&<>]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]!))
+        return `• *<${item.html_url}|${escapedTitle} (#${item.number})>*`
+      }).join('\n')
+    slack.chat.postMessage({
+      channel: '#wg-api',
+      unfurl_links: false,
+      text
+    })
+  }
+}
+
+if (require.main === module)
+  main()
