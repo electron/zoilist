@@ -22,7 +22,10 @@ async function main() {
     const text = `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
       items.map(item => {
         const escapedTitle = item.title.replace(/[&<>]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]!))
-        return `• *<${item.html_url}|${escapedTitle} (#${item.number})>*`
+        const assignment = item.assignees.length
+          ? item.assignees.map(a => `@${a.login}`).join(', ')
+          : '_unassigned_'
+        return `• *<${item.html_url}|${escapedTitle} (#${item.number})>* (${assignment})`
       }).join('\n')
     slack.chat.postMessage({
       channel: '#wg-api',
