@@ -12,7 +12,7 @@ const slack = new WebClient(SLACK_BOT_TOKEN)
 const octokit = new ProbotOctokit()
 
 async function main() {
-  const q = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅"`
+  const q = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅" -label:"wip ⚒"`
   const searchUrl = 'https://github.com/electron/electron/pulls?q=' + encodeURIComponent(q)
   const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
     q: `repo:electron/electron ${q}`,
