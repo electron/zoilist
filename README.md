@@ -5,6 +5,12 @@
 ## Setup
 
 ```sh
+# Clone this repository
+git clone https://github.com/electron/zoilist.git
+
+# Go into the repository
+cd zoilist
+
 # Install dependencies
 yarn install
 
