@@ -20,7 +20,8 @@ jobs:
       uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c  # tag: v3.6.0
       with:
         node-version: 18.x
-    - name: yarn install and test
+    - name: yarn install, build, and test
       run: |
         yarn install
+        yarn build
         yarn test
