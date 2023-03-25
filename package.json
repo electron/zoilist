@@ -5,7 +5,7 @@
   "description": "Nag @electron/api-wg to review API PRs.",
   "author": "Jeremy Rose <nornagon@nornagon.net>",
   "license": "ISC",
-  "homepage": "https://github.com/nornagon/zoilist",
+  "homepage": "https://github.com/electron/zoilist",
   "keywords": [
     "probot",
     "github",
