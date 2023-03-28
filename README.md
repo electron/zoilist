@@ -1,5 +1,7 @@
 # zoilist
 
+[![Test](https://github.com/electron/zoilist/actions/workflows/test.yml/badge.svg)](https://github.com/electron/zoilist/actions/workflows/test.yml)
+
 > A GitHub App built with [Probot](https://github.com/probot/probot) that Nag @electron/api-wg to review API PRs.
 
 ## Setup
