@@ -1,8 +1,8 @@
 import { ProbotOctokit } from 'probot';
 import { WebClient } from '@slack/web-api';
-const { SLACK_BOT_TOKEN } = process.env;
+const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
-if (!SLACK_BOT_TOKEN) {
+if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
   console.error('Missing environment variable SLACK_BOT_TOKEN');
   process.exit(1);
 }
