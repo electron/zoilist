@@ -50,4 +50,12 @@ describe('New PR Slack Notifications', () => {
 
     expect(client.chat.postMessage).not.toHaveBeenCalled();
   });
+
+  it('posts to slack when a draft PR is marked ready for review', async () => {
+    const payload = require('./fixtures/pull_request.ready_for_review.json');
+
+    await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
+
+    expect(client.chat.postMessage).toHaveBeenCalled();
+  });
 });
