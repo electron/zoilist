@@ -43,7 +43,9 @@ export = (app: Probot) => {
     const shouldReviewReadyAPIPR =
       action === 'ready_for_review' && pr.labels.some(({ id }) => hasAPILabel(id));
 
-    if (shouldReviewReadyAPIPR || shouldReviewNewAPIPR) {
+    const isDecember = new Date(payload.pull_request.updated_at).getMonth() === 11;
+
+    if (!isDecember && (shouldReviewReadyAPIPR || shouldReviewNewAPIPR)) {
       await postToSlack(pr);
     }
   });

@@ -58,4 +58,12 @@ describe('New PR Slack Notifications', () => {
 
     expect(client.chat.postMessage).toHaveBeenCalled();
   });
+
+  it('does not post to Slack in the month of December', async () => {
+    const payload = require('./fixtures/pull_request.labeled.december.json');
+
+    await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
+
+    expect(client.chat.postMessage).not.toHaveBeenCalled();
+  });
 });
