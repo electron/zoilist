@@ -18,7 +18,9 @@ async function main() {
     q: `repo:electron/electron ${q}`,
     sort: 'created',
   });
-  if (items.length) {
+
+  // silence during quiet period
+  if (items.length && (new Date()).getMonth() < 11) {
     const text =
       `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
       items
