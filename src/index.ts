@@ -1,6 +1,7 @@
 import { Probot } from 'probot';
 import { EventPayloads } from '@octokit/webhooks';
 import { WebClient } from '@slack/web-api';
+import { isQuietPeriod } from './util';
 
 const API_REVIEW_REQUESTED_LABEL_ID = 1603621692; // api-review/requested
 const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
@@ -21,11 +22,12 @@ async function postToSlack(pr: EventPayloads.WebhookPayloadPullRequestPullReques
     /[&<>]/g,
     (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[x]!,
   );
+  const name = isQuietPeriod() ? 'API WG' : '<!subteam^SNSJW1BA9>';
   await slack.chat.postMessage({
     channel: '#wg-api',
     unfurl_links: false,
     text:
-      `Hey <!subteam^SNSJW1BA9>! Just letting you know that the following PR needs API review:\n` +
+      `Hey ${name}! Just letting you know that the following PR needs API review:\n` +
       `*<${pr._links.html.href}|${escapedTitle} (#${pr.number})>*`,
   });
 }
@@ -43,9 +45,7 @@ export = (app: Probot) => {
     const shouldReviewReadyAPIPR =
       action === 'ready_for_review' && pr.labels.some(({ id }) => hasAPILabel(id));
 
-    const isDecember = new Date(payload.pull_request.updated_at).getMonth() === 11;
-
-    if (!isDecember && (shouldReviewReadyAPIPR || shouldReviewNewAPIPR)) {
+    if (shouldReviewReadyAPIPR || shouldReviewNewAPIPR) {
       await postToSlack(pr);
     }
   });
