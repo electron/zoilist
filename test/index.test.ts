@@ -29,17 +29,39 @@ describe('New PR Slack Notifications', () => {
     probot.load(zoilist);
   });
 
-  it('posts to slack when the api-review/requested label is added', async () => {
-    const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-    await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
+  describe('when the `api-review/requested` label is added', () => {
+    it('posts to slack', async () => {
+      jest.useFakeTimers('modern').setSystemTime(new Date('2023-11-11'));
+      const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
 
-    expect(client.chat.postMessage).toHaveBeenCalledWith({
-      channel: '#wg-api',
-      unfurl_links: false,
-      text:
-        `Hey <!subteam^SNSJW1BA9>! Just letting you know that the following PR needs API review:\n` +
-        '*<https://github.com/electron/electron/pull/38982|feat: add `BrowserWindow.isOccluded()` (#38982)>*',
+      await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
+
+      expect(client.chat.postMessage).toHaveBeenCalledWith({
+        channel: '#wg-api',
+        unfurl_links: false,
+        text:
+          `Hey <!subteam^SNSJW1BA9>! Just letting you know that the following PR needs API review:\n` +
+          '*<https://github.com/electron/electron/pull/38982|feat: add `BrowserWindow.isOccluded()` (#38982)>*',
+      });
+    });
+
+    it('does not @mention anyone in the month of December', async () => {
+      jest.useFakeTimers('modern').setSystemTime(new Date('2023-12-25'));
+      const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
+
+      await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
+
+      expect(client.chat.postMessage).toHaveBeenCalledWith({
+        channel: '#wg-api',
+        unfurl_links: false,
+        text:
+          `Hey API WG! Just letting you know that the following PR needs API review:\n` +
+          '*<https://github.com/electron/electron/pull/38982|feat: add `BrowserWindow.isOccluded()` (#38982)>*',
+      });
     });
   });
 

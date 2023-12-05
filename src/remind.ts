@@ -1,5 +1,6 @@
 import { ProbotOctokit } from 'probot';
 import { WebClient } from '@slack/web-api';
+import { isQuietPeriod } from './util';
 const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
 if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
@@ -18,7 +19,9 @@ async function main() {
     q: `repo:electron/electron ${q}`,
     sort: 'created',
   });
-  if (items.length) {
+
+  // silence during quiet period
+  if (items.length && !isQuietPeriod()) {
     const text =
       `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
       items
