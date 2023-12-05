@@ -20,7 +20,7 @@ async function main() {
   });
 
   // silence during quiet period
-  if (items.length && (new Date()).getMonth() < 11) {
+  if (items.length && new Date().getMonth() < 11) {
     const text =
       `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
       items
