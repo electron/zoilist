@@ -42,7 +42,7 @@ export = (app: Probot) => {
     if (label?.id === API_REVIEW_REQUESTED_LABEL_ID) {
       await postToSlack(pr);
     }
-  })
+  });
 
   app.on('pull_request.ready_for_review', async ({ payload }) => {
     const { pull_request: pr } = payload;
@@ -52,4 +52,3 @@ export = (app: Probot) => {
     }
   });
 };
-
