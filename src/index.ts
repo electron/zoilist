@@ -1,5 +1,5 @@
 import { Probot } from 'probot';
-import { EventPayloads } from '@octokit/webhooks';
+import { PullRequest } from '@octokit/webhooks-types';
 import { WebClient } from '@slack/web-api';
 import { isQuietPeriod } from './util';
 
@@ -17,7 +17,7 @@ const slack = new WebClient(SLACK_BOT_TOKEN);
  * Posts a message to Slack notifying the API WG that a PR needs review.
  * @param pr The PR to post to Slack
  */
-async function postToSlack(pr: EventPayloads.WebhookPayloadPullRequestPullRequest) {
+async function postToSlack(pr: PullRequest) {
   const escapedTitle = pr.title.replace(
     /[&<>]/g,
     (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[x]!,
@@ -36,16 +36,18 @@ async function postToSlack(pr: EventPayloads.WebhookPayloadPullRequestPullReques
 // If a PR is already labeled with the API review label, it won't trigger a notification, so we want to
 // notify the API WG when it becomes ready for review.
 export = (app: Probot) => {
-  app.on(['pull_request.labeled', 'pull_request.ready_for_review'], async ({ payload }) => {
-    const { pull_request: pr, label, action } = payload;
+  app.on('pull_request.labeled', async ({ payload }) => {
+    const { pull_request: pr, label } = payload;
 
-    const hasAPILabel = (id?: number) => id === API_REVIEW_REQUESTED_LABEL_ID;
+    if (label?.id === API_REVIEW_REQUESTED_LABEL_ID) {
+      await postToSlack(pr);
+    }
+  });
 
-    const shouldReviewNewAPIPR = action === 'labeled' && !pr.draft && hasAPILabel(label?.id);
-    const shouldReviewReadyAPIPR =
-      action === 'ready_for_review' && pr.labels.some(({ id }) => hasAPILabel(id));
+  app.on('pull_request.ready_for_review', async ({ payload }) => {
+    const { pull_request: pr } = payload;
 
-    if (shouldReviewReadyAPIPR || shouldReviewNewAPIPR) {
+    if (pr.labels.some(({ id }) => id === API_REVIEW_REQUESTED_LABEL_ID)) {
       await postToSlack(pr);
     }
   });
