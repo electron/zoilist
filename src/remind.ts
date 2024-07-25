@@ -2,12 +2,10 @@ import { ProbotOctokit } from 'probot';
 import { WebClient } from '@slack/web-api';
 import { isQuietPeriod, timeAgo } from './util';
 import { Endpoints } from '@octokit/types';
-const { SLACK_BOT_TOKEN, GITHUB_ACCESS_TOKEN, NODE_ENV } = process.env;
+const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
 type IssueOrPullRequest = Endpoints['GET /search/issues']['response']['data']['items'][number];
 type TeamMember = { login: string };
-
-const hasGitHubAuth = !!GITHUB_ACCESS_TOKEN;
 
 if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
   console.error('Missing environment variable SLACK_BOT_TOKEN');
@@ -16,9 +14,7 @@ if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
 
 const slack = new WebClient(SLACK_BOT_TOKEN);
 
-const octokit = new ProbotOctokit({
-  auth: hasGitHubAuth ? { token: GITHUB_ACCESS_TOKEN } : undefined,
-});
+const octokit = new ProbotOctokit();
 
 function getOwnerAndRepoFromUrl(url: string) {
   const urlObj = new URL(url);
@@ -113,11 +109,18 @@ async function getActivityForPRs(prs: IssueOrPullRequest[], teamMembers: TeamMem
 }
 
 async function getApiWGTeamMembers(): Promise<TeamMember[]> {
-  const { data: teamMembers } = await octokit.teams.listMembersInOrg({
-    org: 'electron',
-    team_slug: 'wg-api',
-  });
-  return teamMembers.map((m) => ({ login: m?.login! }));
+  try {
+    const { data: teamMembers } = await octokit.teams.listMembersInOrg({
+      org: 'electron',
+      team_slug: 'wg-api',
+    });
+    return teamMembers.map((m) => ({ login: m?.login! }));
+  } catch (error) {
+    console.error('Failed to fetch API WG team members:', error);
+
+    // Allow reminder to be sent without this data.
+    return [];
+  }
 }
 
 async function getElectronPRs(teamMembers: TeamMember[]) {
@@ -141,7 +144,7 @@ async function main() {
 
   let text = '';
 
-  const teamMembers: TeamMember[] = hasGitHubAuth ? await getApiWGTeamMembers() : [];
+  const teamMembers = await getApiWGTeamMembers();
   const electronPRs = await getElectronPRs(teamMembers);
 
   if (electronPRs.items.length) {
