@@ -166,8 +166,6 @@ async function main() {
                 )})`
               : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
 
-          // TODO(smaddock): highlight first time contributors
-
           return `• *<${item.html_url}|${escapedTitle} (#${item.number})>*\n    _${reviewLabel}_`;
         })
         .join('\n');
