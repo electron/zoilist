@@ -161,7 +161,7 @@ async function main() {
           const createdAt = new Date(item.created_at);
           const reviewLabel =
             activity
-              ? `Last reviewed ${timeAgo(activity.created_at)} (${formatSlackDate(
+              ? `Last reviewed by @${activity.user?.login} ${timeAgo(activity.created_at)} (${formatSlackDate(
                   activity.created_at,
                 )})`
               : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
