@@ -89,7 +89,7 @@ async function findLatestTeamReviewActivity(pr: IssueOrPullRequest, teamMembers:
     if (activity.user?.login === pr.user?.login) continue;
 
     // Skip activity by non-WG team members
-    if (!teamMembers.some(member => member.login === activity.user?.login)) continue;
+    if (!teamMembers.some((member) => member.login === activity.user?.login)) continue;
 
     latestActivity = activity;
     latestActivityDate = activity.created_at;
@@ -117,7 +117,7 @@ async function getApiWGTeamMembers(): Promise<TeamMember[]> {
     org: 'electron',
     team_slug: 'wg-api',
   });
-  return teamMembers.map(m => ({ login: m?.login! }));
+  return teamMembers.map((m) => ({ login: m?.login! }));
 }
 
 async function getElectronPRs(teamMembers: TeamMember[]) {
@@ -159,18 +159,17 @@ async function main() {
 
           const activity = electronPRs.activity[item.number];
           const createdAt = new Date(item.created_at);
-          const reviewLabel =
-            activity
-              ? `Last reviewed by @${activity.user?.login} ${timeAgo(activity.created_at)} (${formatSlackDate(
-                  activity.created_at,
-                )})`
-              : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
+          const reviewLabel = activity
+            ? `Last reviewed by @${activity.user?.login} ${timeAgo(
+                activity.created_at,
+              )} (${formatSlackDate(activity.created_at)})`
+            : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
 
           return `• *<${item.html_url}|${escapedTitle} (#${item.number})>*\n    _${reviewLabel}_`;
         })
         .join('\n');
   }
-  
+
   if (text.length) {
     slack.chat.postMessage({
       channel: '#wg-api',
