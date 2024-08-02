@@ -67,6 +67,7 @@ async function getReviewActivity(pr: IssueOrPullRequest) {
 }
 
 type PullRequestActivity = Awaited<ReturnType<typeof getReviewActivity>>[number];
+type ActivityMap = Record<number, PullRequestActivity>;
 
 async function findLatestTeamReviewActivity(pr: IssueOrPullRequest, teamMembers: TeamMember[]) {
   const allActivity = await getReviewActivity(pr);
@@ -94,8 +95,11 @@ async function findLatestTeamReviewActivity(pr: IssueOrPullRequest, teamMembers:
   return latestActivity;
 }
 
-async function getActivityForPRs(prs: IssueOrPullRequest[], teamMembers: TeamMember[]) {
-  const activity: Record<number, PullRequestActivity | void> = {};
+async function getActivityForPRs(
+  prs: IssueOrPullRequest[],
+  teamMembers: TeamMember[],
+): Promise<ActivityMap> {
+  const activity: ActivityMap = {};
   if (!teamMembers.length) {
     console.warn('getActivityForPRs: No team members found, skipping.');
     return activity;
@@ -103,7 +107,7 @@ async function getActivityForPRs(prs: IssueOrPullRequest[], teamMembers: TeamMem
 
   for (const pr of prs) {
     const latestActivity = await findLatestTeamReviewActivity(pr, teamMembers);
-    activity[pr.number] = latestActivity;
+    if (latestActivity) activity[pr.number] = latestActivity;
   }
   return activity;
 }
@@ -123,7 +127,7 @@ async function getApiWGTeamMembers(): Promise<TeamMember[]> {
   }
 }
 
-async function getElectronPRs(teamMembers: TeamMember[]) {
+async function getApiData(teamMembers: TeamMember[]) {
   const query = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅" -label:"wip ⚒"`;
   const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
     q: `repo:electron/electron ${query}`,
@@ -133,53 +137,85 @@ async function getElectronPRs(teamMembers: TeamMember[]) {
   return { items, query, activity };
 }
 
+async function getRfcData(teamMembers: TeamMember[]) {
+  const query = `is:open is:pr label:pending-review`;
+  const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
+    q: `repo:electron/rfcs ${query}`,
+    sort: 'created',
+  });
+  const activity = await getActivityForPRs(items, teamMembers);
+  return { items, query, activity };
+}
+
+async function getReminderData() {
+  const teamMembers = await getApiWGTeamMembers();
+  const api = await getApiData(teamMembers);
+  const rfc = await getRfcData(teamMembers);
+  return { api, rfc };
+}
+
+const escapeTitle = (title: string) =>
+  title.replace(/[&<>]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[x]!);
+
 const formatSlackDate = (d: Date) => {
   const unixSeconds = Math.floor(d.getTime() / 1000);
   return `<!date^${unixSeconds}^{date_short}|${d.toDateString()}>`;
+};
+
+const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivity) => {
+  const createdAt = new Date(item.created_at);
+  const reviewLabel = activity
+    ? `Last reviewed by @${activity.user?.login} ${timeAgo(activity.created_at)} (${formatSlackDate(
+        activity.created_at,
+      )})`
+    : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
+
+  return `• *<${item.html_url}|${escapeTitle(item.title)} (#${
+    item.number
+  })>*\n    _${reviewLabel}_`;
 };
 
 async function main() {
   // silence during quiet period
   if (isQuietPeriod()) return;
 
-  let text = '';
+  const reminders: string[] = [];
+  const { api, rfc } = await getReminderData();
 
-  const teamMembers = await getApiWGTeamMembers();
-  const electronPRs = await getElectronPRs(teamMembers);
-
-  if (electronPRs.items.length) {
+  if (api.items.length) {
     const searchUrl =
-      'https://github.com/electron/electron/pulls?q=' + encodeURIComponent(electronPRs.query);
+      'https://github.com/electron/electron/pulls?q=' + encodeURIComponent(api.query);
 
-    text +=
-      `:blob-wave: *Reminder:* the <${searchUrl}|following PRs> are awaiting API review.\n` +
-      electronPRs.items
-        .map((item) => {
-          const escapedTitle = item.title.replace(
-            /[&<>]/g,
-            (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[x]!,
-          );
+    const reminder =
+      `*<${searchUrl}|APIs>*\n` +
+      api.items.map((item) => formatPRListItem(item, api.activity[item.number])).join('\n');
 
-          const activity = electronPRs.activity[item.number];
-          const createdAt = new Date(item.created_at);
-          const reviewLabel = activity
-            ? `Last reviewed by @${activity.user?.login} ${timeAgo(
-                activity.created_at,
-              )} (${formatSlackDate(activity.created_at)})`
-            : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
-
-          return `• *<${item.html_url}|${escapedTitle} (#${item.number})>*\n    _${reviewLabel}_`;
-        })
-        .join('\n');
+    reminders.push(reminder);
   }
 
-  if (text.length) {
-    slack.chat.postMessage({
-      channel: '#wg-api',
-      unfurl_links: false,
-      text,
-    });
+  if (rfc.items.length) {
+    const searchUrl = 'https://github.com/electron/rfcs/pulls?q=' + encodeURIComponent(rfc.query);
+
+    const reminder =
+      `*<${searchUrl}|RFCs>*\n` +
+      rfc.items.map((item) => formatPRListItem(item, rfc.activity[item.number])).join('\n');
+
+    reminders.push(reminder);
   }
+
+  if (!reminders.length) {
+    return;
+  }
+
+  const text = `:blob-wave: *Reminder:* the following PRs are awaiting review.\n\n${reminders.join(
+    '\n\n',
+  )}`;
+
+  slack.chat.postMessage({
+    channel: '#wg-api',
+    unfurl_links: false,
+    text,
+  });
 }
 
 if (require.main === module) main();
