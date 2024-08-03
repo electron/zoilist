@@ -163,14 +163,13 @@ const formatSlackDate = (d: Date) => {
 };
 
 const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivity) => {
-  const isMaintainer = item.author_association === 'MEMBER' || item.author_association === 'OWNER';
-  const isFirstTimeContributor = item.author_association === 'FIRST_TIME_CONTRIBUTOR';
-
   const tags = [
-    isMaintainer && ':pr-maintainer:',
-    isFirstTimeContributor && ':pr-first-time-contributor:',
+    item.author_association === 'CONTRIBUTOR' && ':pr-contributor:',
+    item.author_association === 'FIRST_TIME_CONTRIBUTOR' && ':pr-first-time-contributor:',
   ].filter(Boolean) as string[];
   const tagsLabel = tags.length ? `${tags.join(' ')} ` : '';
+
+  const titleLabel = `*<${item.html_url}|${escapeTitle(item.title)} (#${item.number})>*`;
 
   const createdAt = new Date(item.created_at);
   const reviewLabel = activity
@@ -179,7 +178,7 @@ const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivi
       )})`
     : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
 
-  return `• ${tagsLabel}*<${item.html_url}|${escapeTitle(item.title)} (#${item.number})>*
+  return `• ${tagsLabel}${titleLabel}
     _${reviewLabel}_`;
 };
 
