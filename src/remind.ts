@@ -163,9 +163,13 @@ const formatSlackDate = (d: Date) => {
 };
 
 const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivity) => {
-  const firstTimeContributor = item.author_association === 'FIRST_TIME_CONTRIBUTOR';
+  const isMaintainer = item.author_association === 'MEMBER' || item.author_association === 'OWNER';
+  const isFirstTimeContributor = item.author_association === 'FIRST_TIME_CONTRIBUTOR';
 
-  const tags = [firstTimeContributor && ':first-time-contributor:'].filter(Boolean) as string[];
+  const tags = [
+    isMaintainer && ':pr-maintainer:',
+    isFirstTimeContributor && ':pr-first-time-contributor:',
+  ].filter(Boolean) as string[];
   const tagsLabel = tags.length ? ` ${tags.join(' ')}` : '';
 
   const createdAt = new Date(item.created_at);
