@@ -9,12 +9,23 @@ type TeamMember = { login: string };
 
 if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
   console.error('Missing environment variable SLACK_BOT_TOKEN');
-  process.exit(1);
 }
 
 const slack = new WebClient(SLACK_BOT_TOKEN);
 
-const octokit = new ProbotOctokit();
+let auth: any;
+if (process.env.APP_ID && process.env.PRIVATE_KEY) {
+  auth = {
+    appId: process.env.APP_ID,
+    privateKey: process.env.PRIVATE_KEY,
+  };
+} else if (process.env.GITHUB_TOKEN) {
+  auth = { token: process.env.GITHUB_TOKEN };
+} else {
+  console.warn('Missing GitHub auth credentials, using unauthenticated requests.');
+}
+
+const octokit = new ProbotOctokit({ auth });
 
 function getOwnerAndRepoFromUrl(url: string) {
   const urlObj = new URL(url);
@@ -211,6 +222,7 @@ async function main() {
   }
 
   if (!reminders.length) {
+    console.info('No PRs found needing reminders :)');
     return;
   }
 
@@ -218,11 +230,16 @@ async function main() {
     '\n\n',
   )}`;
 
-  slack.chat.postMessage({
-    channel: '#wg-api',
-    unfurl_links: false,
-    text,
-  });
+  if (SLACK_BOT_TOKEN) {
+    slack.chat.postMessage({
+      channel: '#wg-api',
+      unfurl_links: false,
+      text,
+    });
+  } else {
+    // Log for testing without slack auth
+    console.log(text);
+  }
 }
 
 if (require.main === module) main();
