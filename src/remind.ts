@@ -2,6 +2,7 @@ import { ProbotOctokit } from 'probot';
 import { WebClient } from '@slack/web-api';
 import { isQuietPeriod, timeAgo } from './util';
 import { Endpoints } from '@octokit/types';
+import { getAuthOptionsForOrg } from '@electron/github-app-auth';
 const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
 type IssueOrPullRequest = Endpoints['GET /search/issues']['response']['data']['items'][number];
@@ -13,19 +14,31 @@ if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
 
 const slack = new WebClient(SLACK_BOT_TOKEN);
 
-let auth: any;
-if (process.env.APP_ID && process.env.PRIVATE_KEY) {
-  auth = {
-    appId: process.env.APP_ID,
-    privateKey: process.env.PRIVATE_KEY,
-  };
-} else if (process.env.GITHUB_TOKEN) {
-  auth = { token: process.env.GITHUB_TOKEN };
-} else {
-  console.warn('Missing GitHub auth credentials, using unauthenticated requests.');
-}
+let octokit = new ProbotOctokit();
 
-const octokit = new ProbotOctokit({ auth });
+async function setupOctokit() {
+  if (process.env.APP_ID && process.env.PRIVATE_KEY) {
+    const authOpts = await getAuthOptionsForOrg(
+      'electron',
+      {
+        appId: process.env.APP_ID,
+        privateKey: process.env.PRIVATE_KEY,
+      },
+      {
+        permissions: {
+          members: 'read',
+        },
+      },
+    );
+    octokit = new ProbotOctokit({ ...authOpts });
+  } else if (process.env.GITHUB_TOKEN) {
+    octokit = new ProbotOctokit({
+      auth: { token: process.env.GITHUB_TOKEN },
+    });
+  } else {
+    console.warn('Missing GitHub auth credentials, using unauthenticated requests.');
+  }
+}
 
 function getOwnerAndRepoFromUrl(url: string) {
   const urlObj = new URL(url);
@@ -196,6 +209,8 @@ const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivi
 async function main() {
   // silence during quiet period
   if (isQuietPeriod()) return;
+
+  await setupOctokit();
 
   const reminders: string[] = [];
   const { api, rfc } = await getReminderData();
