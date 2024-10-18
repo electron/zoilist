@@ -38,8 +38,5 @@
   },
   "engines": {
     "node": ">= 16.13.0"
-  },
-  "resolutions": {
-    "**/latest-version/package-json/got": "11.8.5"
   }
 }
