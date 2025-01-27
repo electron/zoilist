@@ -162,7 +162,7 @@ async function getApiData(teamMembers: TeamMember[]) {
 }
 
 async function getRfcData(teamMembers: TeamMember[]) {
-  const query = `is:open is:pr label:pending-review`;
+  const query = `is:open is:pr label:pending-review,final-comment-period`;
   const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
     q: `repo:electron/rfcs ${query}`,
     sort: 'created',
