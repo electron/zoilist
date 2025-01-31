@@ -2,16 +2,18 @@ import fs from 'fs';
 import path from 'path';
 
 import { Probot, ProbotOctokit } from 'probot';
-
-import { MockWebClient, MockedWebClient } from '@slack-wrench/jest-mock-web-client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import zoilist from '../src/index';
 
 const privateKey = fs.readFileSync(path.join(__dirname, 'fixtures/mock-cert.pem'), 'utf-8');
 
+const MockWebClient = vi.hoisted(() => ({ chat: { postMessage: vi.fn() } }));
+
+vi.mock('@slack/web-api', () => ({ WebClient: vi.fn(() => MockWebClient) }));
+
 describe('New PR Slack Notifications', () => {
   let probot: Probot;
-  let client: MockWebClient;
 
   beforeEach(() => {
     probot = new Probot({
@@ -23,24 +25,23 @@ describe('New PR Slack Notifications', () => {
       }),
     });
 
-    client = MockedWebClient.mock.instances[0];
-    client.chat.postMessage = jest.fn();
+    MockWebClient.chat.postMessage.mockClear();
 
     probot.load(zoilist);
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('when the `api-review/requested` label is added', () => {
     it('posts to slack', async () => {
-      jest.useFakeTimers('modern').setSystemTime(new Date('2023-11-11'));
+      vi.useFakeTimers().setSystemTime(new Date('2023-11-11'));
       const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
 
       await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
 
-      expect(client.chat.postMessage).toHaveBeenCalledWith({
+      expect(MockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: '#wg-api',
         unfurl_links: false,
         text:
@@ -50,12 +51,12 @@ describe('New PR Slack Notifications', () => {
     });
 
     it('does not @mention anyone in the month of December', async () => {
-      jest.useFakeTimers('modern').setSystemTime(new Date('2023-12-25'));
+      vi.useFakeTimers().setSystemTime(new Date('2023-12-25'));
       const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
 
       await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
 
-      expect(client.chat.postMessage).toHaveBeenCalledWith({
+      expect(MockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: '#wg-api',
         unfurl_links: false,
         text:
@@ -70,7 +71,7 @@ describe('New PR Slack Notifications', () => {
 
     await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
 
-    expect(client.chat.postMessage).not.toHaveBeenCalled();
+    expect(MockWebClient.chat.postMessage).not.toHaveBeenCalled();
   });
 
   it('posts to slack when a draft PR is marked ready for review', async () => {
@@ -78,6 +79,6 @@ describe('New PR Slack Notifications', () => {
 
     await probot.receive({ name: 'pull_request', payload, id: 'abc123' });
 
-    expect(client.chat.postMessage).toHaveBeenCalled();
+    expect(MockWebClient.chat.postMessage).toHaveBeenCalled();
   });
 });
