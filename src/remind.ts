@@ -1,11 +1,12 @@
 import { ProbotOctokit } from 'probot';
 import { WebClient } from '@slack/web-api';
 import { isQuietPeriod, timeAgo } from './util';
-import { Endpoints } from '@octokit/types';
 import { getAuthOptionsForOrg } from '@electron/github-app-auth';
 const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
-type IssueOrPullRequest = Endpoints['GET /search/issues']['response']['data']['items'][number];
+type IssueOrPullRequest = Awaited<
+  ReturnType<InstanceType<typeof ProbotOctokit>['search']['issuesAndPullRequests']>
+>['data']['items'][number];
 type TeamMember = { login: string };
 
 if (!SLACK_BOT_TOKEN && NODE_ENV !== 'test') {
