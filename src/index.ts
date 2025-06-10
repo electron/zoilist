@@ -1,5 +1,4 @@
-import { Probot } from 'probot';
-import { PullRequest } from '@octokit/webhooks-types';
+import type { Context, Probot } from 'probot';
 import { WebClient } from '@slack/web-api';
 import { isQuietPeriod } from './util';
 
@@ -17,7 +16,7 @@ const slack = new WebClient(SLACK_BOT_TOKEN);
  * Posts a message to Slack notifying the API WG that a PR needs review.
  * @param pr The PR to post to Slack
  */
-async function postToSlack(pr: PullRequest) {
+async function postToSlack(pr: Context<'pull_request'>['payload']['pull_request']) {
   const escapedTitle = pr.title.replace(
     /[&<>]/g,
     (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[x]!,
