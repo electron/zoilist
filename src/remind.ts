@@ -5,7 +5,7 @@ import { getAuthOptionsForOrg } from '@electron/github-app-auth';
 const { SLACK_BOT_TOKEN, NODE_ENV } = process.env;
 
 type IssueOrPullRequest = Awaited<
-  ReturnType<InstanceType<typeof ProbotOctokit>['search']['issuesAndPullRequests']>
+  ReturnType<InstanceType<typeof ProbotOctokit>['rest']['search']['issuesAndPullRequests']>
 >['data']['items'][number];
 type TeamMember = { login: string };
 
@@ -52,17 +52,17 @@ async function getReviewActivity(pr: IssueOrPullRequest) {
   const { owner, repo } = getOwnerAndRepoFromUrl(pr.repository_url);
 
   const [comments, reviewComments, reviews] = await Promise.all([
-    octokit.paginate(octokit.issues.listComments, {
+    octokit.paginate(octokit.rest.issues.listComments, {
       owner,
       repo,
       issue_number: pr.number,
     }),
-    octokit.paginate(octokit.pulls.listReviewComments, {
+    octokit.paginate(octokit.rest.pulls.listReviewComments, {
       owner,
       repo,
       pull_number: pr.number,
     }),
-    octokit.paginate(octokit.pulls.listReviews, {
+    octokit.paginate(octokit.rest.pulls.listReviews, {
       owner,
       repo,
       pull_number: pr.number,
@@ -139,7 +139,7 @@ async function getActivityForPRs(
 
 async function getApiWGTeamMembers(): Promise<TeamMember[]> {
   try {
-    const { data: teamMembers } = await octokit.teams.listMembersInOrg({
+    const { data: teamMembers } = await octokit.rest.teams.listMembersInOrg({
       org: 'electron',
       team_slug: 'wg-api',
     });
@@ -154,7 +154,7 @@ async function getApiWGTeamMembers(): Promise<TeamMember[]> {
 
 async function getApiData(teamMembers: TeamMember[]) {
   const query = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅" -label:"wip ⚒"`;
-  const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
+  const items = await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
     q: `repo:electron/electron ${query}`,
     sort: 'created',
   });
@@ -164,7 +164,7 @@ async function getApiData(teamMembers: TeamMember[]) {
 
 async function getRfcData(teamMembers: TeamMember[]) {
   const query = `is:open is:pr label:pending-review,final-comment-period`;
-  const items = await octokit.paginate(octokit.search.issuesAndPullRequests, {
+  const items = await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
     q: `repo:electron/rfcs ${query}`,
     sort: 'created',
   });
