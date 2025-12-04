@@ -22,6 +22,7 @@
   "dependencies": {
     "@electron/github-app-auth": "^2.2.1",
     "@slack/web-api": "^6.3.0",
+    "@tsconfig/node24": "^24.0.3",
     "probot": "^14.2.1"
   },
   "devDependencies": {
