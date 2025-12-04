@@ -971,6 +971,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tsconfig/node24@npm:^24.0.3":
+  version: 24.0.3
+  resolution: "@tsconfig/node24@npm:24.0.3"
+  checksum: 10c0/68068b503774450d533dda769785356c5722bdc6a3333646fcbcb265e02aafb6d0784619ed85de6d62414df20483428b25bf3d608955ca40b085fb1f12cc26c4
+  languageName: node
+  linkType: hard
+
 "@types/btoa-lite@npm:^1.0.0":
   version: 1.0.2
   resolution: "@types/btoa-lite@npm:1.0.2"
@@ -3425,6 +3432,7 @@ __metadata:
   dependencies:
     "@electron/github-app-auth": "npm:^2.2.1"
     "@slack/web-api": "npm:^6.3.0"
+    "@tsconfig/node24": "npm:^24.0.3"
     "@types/node": "npm:^20.10.6"
     prettier: "npm:^3.0.0"
     probot: "npm:^14.2.1"
