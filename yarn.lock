@@ -1161,13 +1161,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:^12.0.0":
-  version: 12.1.0
-  resolution: "commander@npm:12.1.0"
-  checksum: 10c0/6e1996680c083b3b897bfc1cfe1c58dfbcd9842fd43e1aaf8a795fbc237f65efcc860a3ef457b318e73f29a4f4a28f6403c3d653d021d960e4632dd45bde54a9
-  languageName: node
-  linkType: hard
-
 "cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
@@ -1441,13 +1434,6 @@ __metadata:
   version: 4.0.7
   resolution: "eventemitter3@npm:4.0.7"
   checksum: 10c0/5f6d97cbcbac47be798e6355e3a7639a84ee1f7d9b199a07017f1d2f1e2fe236004d14fa5dfaeba661f94ea57805385e326236a6debbc7145c8877fbc0297c6b
-  languageName: node
-  linkType: hard
-
-"eventsource@npm:^2.0.2":
-  version: 2.0.2
-  resolution: "eventsource@npm:2.0.2"
-  checksum: 10c0/0b8c70b35e45dd20f22ff64b001be9d530e33b92ca8bdbac9e004d0be00d957ab02ef33c917315f59bf2f20b178c56af85c52029bc8e6cc2d61c31d87d943573
   languageName: node
   linkType: hard
 
@@ -2533,19 +2519,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"smee-client@npm:^2.0.1":
-  version: 2.0.4
-  resolution: "smee-client@npm:2.0.4"
-  dependencies:
-    commander: "npm:^12.0.0"
-    eventsource: "npm:^2.0.2"
-    validator: "npm:^13.11.0"
-  bin:
-    smee: bin/smee.js
-  checksum: 10c0/4e578ebf88731fb6eb5e933192c533b2520c3265426d97fe63dee0555d7502efdb1a1127f721b23165c3a08641a3b622b8bfec81509d0a89c54da0f669f26d03
-  languageName: node
-  linkType: hard
-
 "socks-proxy-agent@npm:^8.0.3":
   version: 8.0.5
   resolution: "socks-proxy-agent@npm:8.0.5"
@@ -2809,13 +2782,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"validator@npm:^13.11.0":
-  version: 13.15.23
-  resolution: "validator@npm:13.15.23"
-  checksum: 10c0/22a05ec6a98d48d2b6fb34d43ce854af61d15842362d142e64cfca0325d4d0c2d1051d9f9d3a0f741e58ea888f73a35baf7a2a810f5aed0f89183bd5040f0177
-  languageName: node
-  linkType: hard
-
 "vite-node@npm:3.2.4":
   version: 3.2.4
   resolution: "vite-node@npm:3.2.4"
@@ -3038,7 +3004,6 @@ __metadata:
     "@types/node": "npm:^20.10.6"
     prettier: "npm:^3.0.0"
     probot: "npm:^14.2.1"
-    smee-client: "npm:^2.0.1"
     typescript: "npm:^5.3.3"
     vitest: "npm:^3.0.5"
   languageName: unknown
