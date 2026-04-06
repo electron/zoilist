@@ -10,7 +10,11 @@ const privateKey = fs.readFileSync(path.join(__dirname, 'fixtures/mock-cert.pem'
 
 const MockWebClient = vi.hoisted(() => ({ chat: { postMessage: vi.fn() } }));
 
-vi.mock('@slack/web-api', () => ({ WebClient: vi.fn(() => MockWebClient) }));
+vi.mock('@slack/web-api', () => ({
+  WebClient: vi.fn(function () {
+    return MockWebClient;
+  }),
+}));
 
 describe('New PR Slack Notifications', () => {
   let probot: Probot;
