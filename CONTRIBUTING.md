@@ -5,10 +5,6 @@
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.
 
-This project adheres to the Contributor Covenant
-[code of conduct](https://github.com/electron/electron/blob/main/CODE_OF_CONDUCT.md).
-By participating, you are expected to uphold this code.
-
 ## Issues and PRs
 
 If you have suggestions for how this project could be improved, or want to report a bug, open an issue! We'd love all and any contributions. If you have questions, too, we'd love to hear them.
