@@ -38,7 +38,7 @@ export = (app: Probot) => {
   app.on('pull_request.labeled', async ({ payload }) => {
     const { pull_request: pr, label } = payload;
 
-    if (label?.id === API_REVIEW_REQUESTED_LABEL_ID) {
+    if (label?.id === API_REVIEW_REQUESTED_LABEL_ID && !pr.draft) {
       await postToSlack(pr);
     }
   });
