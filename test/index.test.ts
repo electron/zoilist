@@ -54,6 +54,21 @@ describe('New PR Slack Notifications', () => {
       });
     });
 
+    it('does not post to slack for a draft PR', async () => {
+      const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
+
+      await probot.receive({
+        name: 'pull_request',
+        payload: {
+          ...payload,
+          pull_request: { ...payload.pull_request, draft: true },
+        },
+        id: 'abc123',
+      });
+
+      expect(MockWebClient.chat.postMessage).not.toHaveBeenCalled();
+    });
+
     it('does not @mention anyone in the month of December', async () => {
       vi.useFakeTimers().setSystemTime(new Date('2023-12-25'));
       const payload = require('./fixtures/pull_request.labeled.semver_minor.json');
