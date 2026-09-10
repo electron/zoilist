@@ -285,4 +285,6 @@ async function main() {
   }
 }
 
+export { main };
+
 if (require.main === module) main();
