@@ -152,6 +152,16 @@ async function getApiWGTeamMembers(): Promise<TeamMember[]> {
   }
 }
 
+async function getApprovedApiData(teamMembers: TeamMember[]) {
+  const query = `is:pr is:open -is:draft label:"api-review/approved ✅"`;
+  const items = await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
+    q: `repo:electron/electron ${query}`,
+    sort: 'created',
+  });
+  const activity = await getActivityForPRs(items, teamMembers);
+  return { items, query, activity };
+}
+
 async function getApiData(teamMembers: TeamMember[]) {
   const query = `is:pr is:open -is:draft label:"api-review/requested 🗳" -label:"api-review/approved ✅" -label:"wip ⚒"`;
   const items = await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
@@ -174,9 +184,10 @@ async function getRfcData(teamMembers: TeamMember[]) {
 
 async function getReminderData() {
   const teamMembers = await getApiWGTeamMembers();
+  const approvedApi = await getApprovedApiData(teamMembers);
   const api = await getApiData(teamMembers);
   const rfc = await getRfcData(teamMembers);
-  return { api, rfc };
+  return { approvedApi, api, rfc };
 }
 
 const escapeTitle = (title: string) =>
@@ -187,7 +198,11 @@ const formatSlackDate = (d: Date) => {
   return `<!date^${unixSeconds}^{date_short}|${d.toDateString()}>`;
 };
 
-const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivity) => {
+const formatPRListItem = (
+  item: IssueOrPullRequest,
+  activity?: PullRequestActivity,
+  fallbackLabel = 'Awaiting review since',
+) => {
   const tags = [
     item.author_association === 'CONTRIBUTOR' && ':pr-contributor:',
     item.author_association === 'FIRST_TIME_CONTRIBUTOR' && ':pr-first-time-contributor:',
@@ -201,10 +216,28 @@ const formatPRListItem = (item: IssueOrPullRequest, activity?: PullRequestActivi
     ? `Last reviewed by @${activity.user?.login} ${timeAgo(activity.created_at)} (${formatSlackDate(
         activity.created_at,
       )})`
-    : `Awaiting review since ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
+    : `${fallbackLabel} ${timeAgo(createdAt)} (${formatSlackDate(createdAt)})`;
 
   return `• ${tagsLabel}${titleLabel}
     _${reviewLabel}_`;
+};
+
+type ReminderSectionData = Awaited<ReturnType<typeof getApiData>>;
+
+const formatSection = (
+  title: string,
+  repo: string,
+  data: ReminderSectionData,
+  fallbackLabel?: string,
+) => {
+  const searchUrl = `https://github.com/${repo}/pulls?q=` + encodeURIComponent(data.query);
+
+  return (
+    `*<${searchUrl}|${title}>*\n` +
+    data.items
+      .map((item) => formatPRListItem(item, data.activity[item.number], fallbackLabel))
+      .join('\n')
+  );
 };
 
 async function main() {
@@ -214,27 +247,20 @@ async function main() {
   await setupOctokit();
 
   const reminders: string[] = [];
-  const { api, rfc } = await getReminderData();
+  const { approvedApi, api, rfc } = await getReminderData();
+
+  if (approvedApi.items.length) {
+    reminders.push(
+      formatSection('APIs - Ready for final review/merge', 'electron/electron', approvedApi),
+    );
+  }
 
   if (api.items.length) {
-    const searchUrl =
-      'https://github.com/electron/electron/pulls?q=' + encodeURIComponent(api.query);
-
-    const reminder =
-      `*<${searchUrl}|APIs>*\n` +
-      api.items.map((item) => formatPRListItem(item, api.activity[item.number])).join('\n');
-
-    reminders.push(reminder);
+    reminders.push(formatSection('APIs - Needs review', 'electron/electron', api));
   }
 
   if (rfc.items.length) {
-    const searchUrl = 'https://github.com/electron/rfcs/pulls?q=' + encodeURIComponent(rfc.query);
-
-    const reminder =
-      `*<${searchUrl}|RFCs>*\n` +
-      rfc.items.map((item) => formatPRListItem(item, rfc.activity[item.number])).join('\n');
-
-    reminders.push(reminder);
+    reminders.push(formatSection('RFCs', 'electron/rfcs', rfc));
   }
 
   if (!reminders.length) {
@@ -242,9 +268,10 @@ async function main() {
     return;
   }
 
-  const text = `:blob-wave: *Reminder:* the following PRs are awaiting review.\n\n${reminders.join(
-    '\n\n',
-  )}`;
+  const summary = approvedApi.items.length
+    ? 'the following PRs are awaiting review or merge.'
+    : 'the following PRs are awaiting review.';
+  const text = `:blob-wave: *Reminder:* ${summary}\n\n${reminders.join('\n\n')}`;
 
   if (SLACK_BOT_TOKEN) {
     slack.chat.postMessage({
@@ -257,5 +284,7 @@ async function main() {
     console.log(text);
   }
 }
+
+export { main };
 
 if (require.main === module) main();
